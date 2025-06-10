@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Home - Chat App</title>
+    <style>
+        body, html {
+            margin: 0; padding: 0; height: 100vh; font-family: Arial, sans-serif;
+            display: flex; flex-direction: column;
+        }
+        .topbar {
+            height: 60px; background: #007bff; color: white;
+            display: flex; align-items: center; padding: 0 20px;
+        }
+        .topbar img {
+            width: 40px; height: 40px; border-radius: 50%; margin-right: 15px;
+            object-fit: cover;
+        }
+        .container {
+            flex: 1; display: flex; height: calc(100vh - 60px);
+        }
+        .sidebar {
+            width: 300px; background: #f1f1f1; border-right: 1px solid #ccc;
+            overflow-y: auto;
+        }
+        .sidebar .user {
+            display: flex; align-items: center; padding: 10px 15px; cursor: pointer;
+            border-bottom: 1px solid #ddd;
+            transition: background-color 0.2s ease;
+        }
+        .sidebar .user:hover {
+            background-color: #ddd;
+        }
+        .sidebar img {
+            width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
+            margin-right: 10px;
+        }
+        .chat-area {
+            flex: 1; display: flex; flex-direction: column;
+        }
+        .chat-header {
+            height: 60px; border-bottom: 1px solid #ccc;
+            display: flex; align-items: center; padding: 0 20px;
+        }
+        .chat-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #fff;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .message {
+            max-width: 60%;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            line-height: 1.3;
+            word-wrap: break-word;
+            display: inline-block;
+        }
+
+        /* Sent messages (current user) on the right */
+        .message.sent {
+            background-color: #007bff;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 0;
+        }
+
+        /* Received messages (others) on the left */
+        .message.received {
+            background-color: #e5e5ea;
+            color: black;
+            align-self: flex-start;
+            border-bottom-left-radius: 0;
+        }
+        .chat-input {
+            height: 60px; border-top: 1px solid #ccc;
+            display: flex; align-items: center; padding: 0 20px;
+        }
+        .chat-input input {
+            flex: 1; height: 40px; padding: 0 10px;
+            font-size: 16px; border-radius: 5px; border: 1px solid #ccc;
+        }
+        .chat-input button {
+            margin-left: 10px; padding: 10px 20px;
+            background: #007bff; border: none; color: white;
+            border-radius: 5px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <img src="{{ current_user_profile.profile_pic.url }}" alt="Profile Pic" />
+        <span>Hello, {{ current_user.username }}</span>
+    </div>
+    <div class="container">
+        <div class="sidebar">
+            {% for reg_user in other_users %}
+            <a href="?chat_with={{ reg_user.user.id }}" style="text-decoration: none; color: inherit;">
+                <div class="user">
+                    <img src="{{ reg_user.profile_pic.url }}" alt="{{ reg_user.user.username }}"/>
+                    <span>{{ reg_user.user.username }}</span>
+                </div>
+            </a>
+            {% empty %}
+            <p style="padding: 10px;">No other users found.</p>
+            {% endfor %}
+        </div>
+
+        <div class="chat-area">
+            <div class="chat-header" id="chatHeader">
+                {% if selected_user %}
+                    <h3>Chatting with {{ selected_user.username }}</h3>
+                {% else %}
+                    <h3>Select a user to chat</h3>
+                {% endif %}
+            </div>
+
+            <div class="chat-content" id="chatContent">
+                {% if chat_messages %}
+                    {% for msg in chat_messages %}
+                        <div class="message {% if msg.sender.id == current_user.id %}sent{% else %}received{% endif %}">
+                            <span class="message-text">{{ msg.message }}</span>
+                        </div>
+                    {% endfor %}
+                {% elif selected_user %}
+                    <p>No messages yet. Start the conversation!</p>
+                {% endif %}
+            </div>
+
+            {% if selected_user %}
+            <div class="chat-input" id="chatInput">
+                <input type="text" id="messageInput" placeholder="Type a message..." />
+                <button onclick="sendMessage()">Send</button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if selected_user %}
+    <script>
+        const userId = {{ current_user.id }};
+        const otherUserId = {{ selected_user.id }};
+        const chatSocket = new WebSocket(
+            'ws://' + window.location.host + '/ws/chat/' + otherUserId + '/'
+        );
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            const chatBox = document.getElementById('chatContent');
+
+            const messageElem = document.createElement('div');
+            messageElem.classList.add('message');
+            messageElem.classList.add(data.sender == userId ? 'sent' : 'received');
+            messageElem.innerHTML = `<span class="message-text">${data.message}</span>`;
+
+            chatBox.appendChild(messageElem);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        };
+
+
+        chatSocket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly');
+        };
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (message) {
+                chatSocket.send(JSON.stringify({
+                    'message': message
+                }));
+                input.value = '';
+            }
+        }
+    </script>
+    {% endif %}
+</body>
+</html>
