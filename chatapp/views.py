@@ -77,3 +77,6 @@ def home(request):
         'chat_messages': chat_messages,
         'room_name': room.name if room else None,
     })
+    
+def custom_404(request, exception):
+    return render(request, '404.html', status=404)
