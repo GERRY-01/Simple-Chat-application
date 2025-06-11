@@ -93,8 +93,9 @@
 </head>
 <body>
     <div class="topbar">
-        <img src="{{ current_user_profile.profile_pic.url }}" alt="Profile Pic" />
+        <img src="{{ current_user_profile.profile_pic.url }}" alt="Profile Pic"/>
         <span>Hello, {{ current_user.username }}</span>
+        <a href="{% url 'logout' %}" style="margin-left: auto; color: white; text-decoration: none; background: #007bff; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Logout</a>
     </div>
     <div class="container">
         <div class="sidebar">
