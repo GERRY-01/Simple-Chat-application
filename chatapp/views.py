@@ -2,7 +2,7 @@ from django.shortcuts import render,redirect
 from django.contrib import messages
 from .models import Registration,Room,Message
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate,login as auth_login
+from django.contrib.auth import authenticate,login as auth_login,logout
 
 # Create your views here.
 def registration(request):
@@ -43,6 +43,10 @@ def login(request):
             messages.error(request,'Invalid credentials')
             return redirect('login')
     return render(request,'login.html')
+
+def logout_user(request):
+    logout(request)
+    return redirect('login')
 
 def get_room_name(user1_id, user2_id):
     ids = sorted([str(user1_id), str(user2_id)])
